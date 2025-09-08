@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Batch d'Images - MasterCamps</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .upload-form {
+            margin: 30px 0;
+        }
+        .form-group {
+            margin: 20px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="file"], input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px dashed #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        input[type="file"]:hover {
+            border-color: #4CAF50;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .progress {
+            display: none;
+            margin: 20px 0;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #4CAF50;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .results {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .details {
+            margin-top: 15px;
+        }
+        .image-item {
+            background: #f8f9fa;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 3px;
+            border-left: 4px solid #28a745;
+        }
+        .image-item.error {
+            border-left-color: #dc3545;
+        }
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+        }
+        .stat-box {
+            text-align: center;
+            padding: 15px;
+            background: #e9ecef;
+            border-radius: 5px;
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #495057;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #6c757d;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Upload Batch d'Images pour Analyse des Poubelles</h1>
+        <p>Uploadez un fichier ZIP contenant des images de poubelles pour les analyser automatiquement.</p>
+        
+        <form id="uploadForm" class="upload-form">
+            <div class="form-group">
+                <label for="zipFile">Fichier ZIP d'images:</label>
+                <input type="file" id="zipFile" name="zip_file" accept=".zip" required>
+                <small>Formats d'images supportés: JPG, PNG, BMP, TIFF, GIF</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="quartier">Quartier (obligatoire):</label>
+                <input type="text" id="quartier" name="quartier" placeholder="Nom du quartier" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="ville">Ville (obligatoire):</label>
+                <input type="text" id="ville" name="ville" placeholder="Nom de la ville" required>
+            </div>
+            
+            <button type="submit" id="submitBtn">Analyser les Images</button>
+        </form>
+        
+        <div class="progress" id="progress">
+            <p>Traitement en cours...</p>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+        
+        <div class="results" id="results">
+            <div class="stats" id="stats"></div>
+            <div class="details" id="details"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            const zipFile = document.getElementById('zipFile').files[0];
+            const quartier = document.getElementById('quartier').value;
+            const ville = document.getElementById('ville').value;
+            
+            if (!zipFile) {
+                alert('Veuillez sélectionner un fichier ZIP');
+                return;
+            }
+            
+            if (!quartier) {
+                alert('Le quartier est obligatoire');
+                return;
+            }
+            
+            if (!ville) {
+                alert('La ville est obligatoire');
+                return;
+            }
+            
+            formData.append('zip_file', zipFile);
+            formData.append('quartier', quartier);
+            formData.append('ville', ville);
+            
+            // Afficher la barre de progression
+            document.getElementById('progress').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('submitBtn').disabled = true;
+            
+            // Simuler la progression
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress > 90) progress = 90;
+                document.getElementById('progressFill').style.width = progress + '%';
+            }, 200);
+            
+            try {
+                const response = await fetch('/api/batch-upload-zip/', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                // Compléter la progression
+                clearInterval(progressInterval);
+                document.getElementById('progressFill').style.width = '100%';
+                
+                setTimeout(() => {
+                    document.getElementById('progress').style.display = 'none';
+                    showResults(result, response.ok);
+                }, 500);
+                
+            } catch (error) {
+                clearInterval(progressInterval);
+                document.getElementById('progress').style.display = 'none';
+                showResults({error: 'Erreur de connexion: ' + error.message}, false);
+            }
+            
+            document.getElementById('submitBtn').disabled = false;
+        });
+        
+        function showResults(data, success) {
+            const resultsDiv = document.getElementById('results');
+            const statsDiv = document.getElementById('stats');
+            const detailsDiv = document.getElementById('details');
+            
+            resultsDiv.className = 'results ' + (success ? 'success' : 'error');
+            resultsDiv.style.display = 'block';
+            
+            if (success) {
+                // Afficher les statistiques
+                statsDiv.innerHTML = `
+                    <div class="stat-box">
+                        <div class="stat-number">${data.processed_images}</div>
+                        <div class="stat-label">Images Traitées</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">${data.errors}</div>
+                        <div class="stat-label">Erreurs</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">${Math.round((data.processed_images / (data.processed_images + data.errors)) * 100)}%</div>
+                        <div class="stat-label">Taux de Succès</div>
+                    </div>
+                `;
+                
+                // Afficher les détails
+                let detailsHTML = '<h3>Détails du traitement:</h3>';
+                
+                if (data.details.successful.length > 0) {
+                    detailsHTML += '<h4>Images traitées avec succès:</h4>';
+                    data.details.successful.forEach(img => {
+                        detailsHTML += `
+                            <div class="image-item">
+                                <strong>${img.filename}</strong> - 
+                                Classification: ${img.classification} 
+                                (ID: ${img.id})
+                            </div>
+                        `;
+                    });
+                }
+                
+                if (data.details.failed.length > 0) {
+                    detailsHTML += '<h4>Erreurs:</h4>';
+                    data.details.failed.forEach(err => {
+                        detailsHTML += `
+                            <div class="image-item error">
+                                <strong>${err.filename}</strong> - 
+                                Erreur: ${err.error}
+                            </div>
+                        `;
+                    });
+                }
+                
+                detailsDiv.innerHTML = detailsHTML;
+                
+            } else {
+                statsDiv.innerHTML = '';
+                detailsDiv.innerHTML = `<h3>Erreur:</h3><p>${data.error || 'Une erreur est survenue'}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
